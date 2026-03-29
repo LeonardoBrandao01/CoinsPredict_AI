@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detector de Moedas BRL</title>
+    <!-- Google Fonts for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Local Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="brand-icon">R$</div>
+        <h1>Portal de Identificação</h1>
+        <p>Aproxime a moeda da câmera para autenticação de valor em tempo real.</p>
+
+        <!-- Toggle Button -->
+        <button id="toggle-camera-btn" type="button" onclick="toggleCamera()">Ativar Câmera</button>
+
+        <!-- Camera Interface Wrapper -->
+        <div id="webcam-wrapper" class="hidden">
+            <div class="scanning-overlay"></div>
+            <div id="webcam-container"></div>
+        </div>
+
+        <!-- Result Display -->
+        <div id="result-badge" class="hidden">---</div>
+    </div>
+
+    <!-- TensorFlow.js and Teachable Machine -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+    <script type="text/javascript">
+        // Link do Teachable Machine
+        const URL = "https://teachablemachine.withgoogle.com/models/SIX-uUM6Y/";
+
+        let model, webcam, maxPredictions;
+        let isCameraActive = false;
+        let loopFrameId;
+
+        // DOM Elements
+        const toggleBtn = document.getElementById("toggle-camera-btn");
+        const webcamWrapper = document.getElementById("webcam-wrapper");
+        const webcamContainer = document.getElementById("webcam-container");
+        const labelContainer = document.getElementById("result-badge");
+
+        // Load model once
+        async function initModel() {
+            if (!model) {
+                toggleBtn.disabled = true;
+                toggleBtn.innerText = "Carregando modelo IA...";
+                const modelURL = URL + "model.json";
+                const metadataURL = URL + "metadata.json";
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+            }
+        }
+
+        // Toggle action handler
+        async function toggleCamera() {
+            if (isCameraActive) {
+                await stopCamera();
+            } else {
+                await startCamera();
+            }
+        }
+
+        async function startCamera() {
+            // Load model
+            await initModel();
+
+            toggleBtn.disabled = true;
+            toggleBtn.innerText = "Iniciando câmera...";
+
+            // Configuration for the webcam
+            const flip = true; // whether to flip the webcam
+            webcam = new tmImage.Webcam(350, 350, flip); // width, height, flip
+
+            try {
+                await webcam.setup(); // request access to the webcam
+                await webcam.play();
+
+                isCameraActive = true;
+
+                // Update UI state
+                toggleBtn.disabled = false;
+                toggleBtn.innerText = "Desativar Câmera";
+                toggleBtn.classList.add('active-btn');
+
+                webcamWrapper.classList.remove('hidden');
+                labelContainer.classList.remove('hidden');
+                labelContainer.innerHTML = "Identificando...";
+
+                // append elements to the DOM
+                webcamContainer.innerHTML = ''; // reset just in case
+                webcamContainer.appendChild(webcam.canvas);
+
+                // start prediction loop
+                loopFrameId = window.requestAnimationFrame(loop);
+            } catch (err) {
+                console.error("Erro ao acessar a câmera: ", err);
+                toggleBtn.disabled = false;
+                toggleBtn.innerText = "Ativar Câmera";
+                alert("Não foi possível acessar a câmera. Verifique as permissões.");
+            }
+        }
+
+        async function stopCamera() {
+            isCameraActive = false;
+
+            // Stop loop
+            if (loopFrameId) {
+                window.cancelAnimationFrame(loopFrameId);
+                loopFrameId = null;
+            }
+
+            // Stop media stream and cleanup
+            if (webcam) {
+                webcam.stop();
+                webcamContainer.innerHTML = '';
+            }
+
+            // Reset UI state
+            toggleBtn.innerText = "Ativar Câmera";
+            toggleBtn.classList.remove('active-btn');
+            webcamWrapper.classList.add('hidden');
+            labelContainer.classList.add('hidden');
+            labelContainer.innerHTML = "---";
+        }
+
+        async function loop() {
+            if (!isCameraActive) return;
+            webcam.update(); // update the webcam frame
+            await predict();
+            loopFrameId = window.requestAnimationFrame(loop);
+        }
+
+        // run the webcam image through the image model
+        async function predict() {
+            if (!isCameraActive || !webcam || !webcam.canvas) return;
+
+            const prediction = await model.predict(webcam.canvas);
+
+            let highestProb = 0;
+            let bestLabel = "";
+
+            for (let i = 0; i < maxPredictions; i++) {
+                if (prediction[i].probability > highestProb) {
+                    highestProb = prediction[i].probability;
+                    bestLabel = prediction[i].className;
+                }
+            }
+
+            // Exibir badge apenas com confiança alta
+            if (highestProb > 0.85) {
+                labelContainer.innerHTML = bestLabel;
+                labelContainer.classList.add('found');
+            } else {
+                labelContainer.innerHTML = "Identificando...";
+                labelContainer.classList.remove('found');
+            }
+        }
+    </script>
+</body>
+
+</html>
