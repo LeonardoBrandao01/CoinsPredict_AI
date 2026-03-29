@@ -1,0 +1,248 @@
+/* Royal Mint Design System */
+:root {
+    --bg-dark: #09090b;
+    --card-bg: rgba(24, 24, 27, 0.4);
+    --gold: #d9b350;
+    --gold-glow: rgba(217, 179, 80, 0.3);
+    --gold-muted: #b8860b;
+    --emerald: #10b981;
+    --emerald-bg: rgba(16, 185, 129, 0.1);
+    --text-white: #fafafa;
+    --text-slate: #94a3b8;
+    --border-gold: rgba(217, 179, 80, 0.2);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    text-align: center;
+    background: radial-gradient(circle at top, #18181b 0%, #09090b 100%);
+    color: var(--text-white);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: hidden;
+}
+
+/* Ambient glow background */
+body::before {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
+    top: -150px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Main Container - Premium Glass */
+.container {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-gold);
+    max-width: 500px;
+    width: 100%;
+    margin: auto;
+    padding: 50px 35px;
+    border-radius: 32px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.4s ease;
+}
+
+.brand-icon {
+    font-size: 2.5rem;
+    color: var(--gold);
+    margin-bottom: 15px;
+    text-shadow: 0 0 20px var(--gold-glow);
+    animation: pulse-glow 3s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Typography */
+h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text-white);
+    margin-bottom: 8px;
+    letter-spacing: -0.03em;
+    background: linear-gradient(to bottom, #fff 0%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+p {
+    font-size: 0.95rem;
+    color: var(--text-slate);
+    margin-bottom: 35px;
+    line-height: 1.6;
+    max-width: 80%;
+}
+
+/* Premium Gold Button */
+button {
+    background: linear-gradient(135deg, #d9b350 0%, #b8860b 100%);
+    color: #18181b;
+    border: none;
+    padding: 16px 32px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 20px -5px rgba(184, 134, 11, 0.4);
+    outline: none;
+    width: 100%;
+    max-width: 320px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+button:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px -5px rgba(184, 134, 11, 0.6);
+    filter: brightness(1.1);
+}
+
+button:active:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+button:disabled {
+    background: rgba(39, 39, 42, 0.8);
+    color: #52525b;
+    cursor: not-allowed;
+    box-shadow: none;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Stop Button State */
+button.active-btn {
+    background: #18181b;
+    color: var(--gold);
+    border: 2px solid var(--gold);
+    box-shadow: inset 0 0 10px var(--gold-glow);
+}
+
+button.active-btn:hover:not(:disabled) {
+    background: var(--gold);
+    color: #18181b;
+    box-shadow: 0 0 30px var(--gold-glow);
+}
+
+/* Webcam Area Setup */
+#webcam-wrapper {
+    margin-top: 35px;
+    position: relative;
+    width: 350px;
+    height: 350px;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 0 0 1px var(--border-gold), 0 20px 40px -10px rgba(0, 0, 0, 0.8);
+    background: #000;
+}
+
+#webcam-wrapper.hidden {
+    display: none;
+}
+
+#webcam-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+}
+
+#webcam-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+}
+
+/* Laser Scan Animation - Golden */
+.scanning-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+    box-shadow: 0 0 20px var(--gold), 0 0 40px var(--gold-glow);
+    animation: laser-scan 2.5s infinite linear;
+    z-index: 10;
+    pointer-events: none;
+}
+
+@keyframes laser-scan {
+    0% { top: 0; opacity: 0; }
+    5% { opacity: 1; }
+    95% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+}
+
+/* Result Badge Style - Premium Mint Seal */
+#result-badge {
+    margin-top: 30px;
+    background: rgba(24, 24, 27, 0.8);
+    color: var(--text-slate);
+    padding: 14px 40px;
+    border-radius: 100px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.4s ease;
+    min-width: 250px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+#result-badge.hidden {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+#result-badge.found {
+    background: var(--emerald-bg);
+    color: var(--emerald);
+    border-color: var(--emerald);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.1);
+    animation: stamp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes stamp {
+    0% { transform: scale(1.3); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .container {
+        padding: 40px 20px;
+        width: 95%;
+    }
+
+    #webcam-wrapper {
+        width: 300px;
+        height: 300px;
+    }
+
+    h1 { font-size: 1.8rem; }
+}
