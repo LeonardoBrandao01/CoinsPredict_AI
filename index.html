@@ -18,16 +18,20 @@
         <h1>Portal de Identificação</h1>
         <p>Aproxime a moeda da câmera para autenticação de valor em tempo real.</p>
 
-        <!-- Toggle Button -->
-        <button id="toggle-camera-btn" type="button" onclick="toggleCamera()">Ativar Câmera</button>
+        <div class="controls">
+            <button id="toggle-camera-btn" type="button" onclick="toggleCamera()">Ativar Câmera</button>
+            <button id="upload-btn" type="button" onclick="document.getElementById('image-input').click()">Subir Imagem</button>
+            <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+        </div>
 
-        <!-- Camera Interface Wrapper -->
+
         <div id="webcam-wrapper" class="hidden">
             <div class="scanning-overlay"></div>
             <div id="webcam-container"></div>
+            <img id="image-preview" src="" alt="Preview" class="hidden">
         </div>
 
-        <!-- Result Display -->
+
         <div id="result-badge" class="hidden">---</div>
     </div>
 
@@ -37,32 +41,34 @@
         src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
     <script type="text/javascript">
-        // Link do Teachable Machine
         const URL = "https://teachablemachine.withgoogle.com/models/SIX-uUM6Y/";
 
         let model, webcam, maxPredictions;
         let isCameraActive = false;
         let loopFrameId;
 
-        // DOM Elements
         const toggleBtn = document.getElementById("toggle-camera-btn");
+        const uploadBtn = document.getElementById("upload-btn");
         const webcamWrapper = document.getElementById("webcam-wrapper");
         const webcamContainer = document.getElementById("webcam-container");
+        const imagePreview = document.getElementById("image-preview");
         const labelContainer = document.getElementById("result-badge");
 
-        // Load model once
         async function initModel() {
             if (!model) {
                 toggleBtn.disabled = true;
-                toggleBtn.innerText = "Carregando modelo IA...";
+                uploadBtn.disabled = true;
+                toggleBtn.innerText = "Carregando modelo...";
                 const modelURL = URL + "model.json";
                 const metadataURL = URL + "metadata.json";
                 model = await tmImage.load(modelURL, metadataURL);
                 maxPredictions = model.getTotalClasses();
+                toggleBtn.disabled = false;
+                uploadBtn.disabled = false;
+                toggleBtn.innerText = "Ativar Câmera";
             }
         }
 
-        // Toggle action handler
         async function toggleCamera() {
             if (isCameraActive) {
                 await stopCamera();
@@ -72,81 +78,100 @@
         }
 
         async function startCamera() {
-            // Load model
             await initModel();
+            clearImagePreview();
 
             toggleBtn.disabled = true;
-            toggleBtn.innerText = "Iniciando câmera...";
+            toggleBtn.innerText = "Iniciando...";
 
-            // Configuration for the webcam
-            const flip = true; // whether to flip the webcam
-            webcam = new tmImage.Webcam(350, 350, flip); // width, height, flip
+            const flip = true;
+            webcam = new tmImage.Webcam(350, 350, flip);
 
             try {
-                await webcam.setup(); // request access to the webcam
+                await webcam.setup();
                 await webcam.play();
-
                 isCameraActive = true;
 
-                // Update UI state
                 toggleBtn.disabled = false;
                 toggleBtn.innerText = "Desativar Câmera";
                 toggleBtn.classList.add('active-btn');
+                uploadBtn.classList.add('muted-btn');
 
                 webcamWrapper.classList.remove('hidden');
                 labelContainer.classList.remove('hidden');
                 labelContainer.innerHTML = "Identificando...";
 
-                // append elements to the DOM
-                webcamContainer.innerHTML = ''; // reset just in case
+                webcamContainer.innerHTML = '';
                 webcamContainer.appendChild(webcam.canvas);
 
-                // start prediction loop
-                loopFrameId = window.requestAnimationFrame(loop);
+                loop();
             } catch (err) {
                 console.error("Erro ao acessar a câmera: ", err);
                 toggleBtn.disabled = false;
                 toggleBtn.innerText = "Ativar Câmera";
-                alert("Não foi possível acessar a câmera. Verifique as permissões.");
+                alert("Não foi possível acessar a câmera.");
             }
         }
 
         async function stopCamera() {
             isCameraActive = false;
-
-            // Stop loop
             if (loopFrameId) {
-                window.cancelAnimationFrame(loopFrameId);
+                clearTimeout(loopFrameId);
                 loopFrameId = null;
             }
-
-            // Stop media stream and cleanup
             if (webcam) {
                 webcam.stop();
                 webcamContainer.innerHTML = '';
             }
-
-            // Reset UI state
             toggleBtn.innerText = "Ativar Câmera";
             toggleBtn.classList.remove('active-btn');
-            webcamWrapper.classList.add('hidden');
-            labelContainer.classList.add('hidden');
-            labelContainer.innerHTML = "---";
+            uploadBtn.classList.remove('muted-btn');
+            
+            if (!imagePreview.src || imagePreview.classList.contains('hidden')) {
+                webcamWrapper.classList.add('hidden');
+                labelContainer.classList.add('hidden');
+            }
+        }
+
+        function clearImagePreview() {
+            imagePreview.src = "";
+            imagePreview.classList.add('hidden');
+            webcamContainer.classList.remove('hidden');
+        }
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (isCameraActive) await stopCamera();
+            await initModel();
+
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                imagePreview.src = e.target.result;
+                imagePreview.classList.remove('hidden');
+                webcamContainer.classList.add('hidden');
+                webcamWrapper.classList.remove('hidden');
+                labelContainer.classList.remove('hidden');
+                labelContainer.innerHTML = "Processando imagem...";
+
+                imagePreview.onload = async () => {
+                    await predict(imagePreview);
+                };
+            };
+            reader.readAsDataURL(file);
         }
 
         async function loop() {
             if (!isCameraActive) return;
-            webcam.update(); // update the webcam frame
-            await predict();
-            loopFrameId = window.requestAnimationFrame(loop);
+            webcam.update();
+            await predict(webcam.canvas);
+            loopFrameId = setTimeout(loop, 650); // Increased interval to 650ms
         }
 
-        // run the webcam image through the image model
-        async function predict() {
-            if (!isCameraActive || !webcam || !webcam.canvas) return;
-
-            const prediction = await model.predict(webcam.canvas);
-
+        async function predict(source) {
+            if (!model || !source) return;
+            const prediction = await model.predict(source);
             let highestProb = 0;
             let bestLabel = "";
 
@@ -157,7 +182,6 @@
                 }
             }
 
-            // Exibir badge apenas com confiança alta
             if (highestProb > 0.85) {
                 labelContainer.innerHTML = bestLabel;
                 labelContainer.classList.add('found');

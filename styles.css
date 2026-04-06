@@ -135,18 +135,47 @@ button:disabled {
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Stop Button State */
-button.active-btn {
-    background: #18181b;
-    color: var(--gold);
-    border: 2px solid var(--gold);
-    box-shadow: inset 0 0 10px var(--gold-glow);
+/* Controls Layout */
+.controls {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 5px;
 }
 
-button.active-btn:hover:not(:disabled) {
-    background: var(--gold);
-    color: #18181b;
-    box-shadow: 0 0 30px var(--gold-glow);
+button {
+    flex: 1;
+}
+
+/* Secondary/Muted Button State */
+button#upload-btn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-slate);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+button#upload-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-white);
+    transform: translateY(-2px);
+}
+
+/* active/stop state */
+button.active-btn {
+    background: #18181b !important;
+    color: var(--gold) !important;
+    border: 2px solid var(--gold) !important;
+    box-shadow: inset 0 0 10px var(--gold-glow) !important;
+}
+
+button.muted-btn {
+    opacity: 0.5;
+    filter: grayscale(0.5);
+    pointer-events: none;
 }
 
 /* Webcam Area Setup */
@@ -165,10 +194,11 @@ button.active-btn:hover:not(:disabled) {
     display: none;
 }
 
-#webcam-container {
+#webcam-container, #image-preview {
     width: 100%;
     height: 100%;
     display: flex;
+    object-fit: cover;
 }
 
 #webcam-container canvas {
